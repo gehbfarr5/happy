@@ -64,13 +64,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="$(node --input-type=module -e "import config from './packages/happy-app/app.config.js'; console.log(config.expo.version)")"
+          VERSION="$(node -e "const fs=require('fs'); const src=fs.readFileSync('./packages/happy-app/app.config.js','utf8'); const match=src.match(/version:\\s*\\\"([^\\\"]+)\\\"/); if (!match) { throw new Error('version not found in app.config.js'); } console.log(match[1]);")"
+          APK_PATH="$(find packages/happy-app/android/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' | head -n 1)"
+          if [ -z "${APK_PATH}" ]; then
+            echo "No APK found under packages/happy-app/android/app/build/outputs/apk/debug"
+            exit 1
+          fi
           mkdir -p dist
-          cp packages/happy-app/android/app/build/outputs/apk/debug/app-debug.apk "dist/happy-android-v${VERSION}-debug.apk"
+          cp "${APK_PATH}" "dist/happy-android-v${VERSION}-debug.apk"
           {
             echo "version=${VERSION}"
             echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "git_sha=${GITHUB_SHA}"
+            echo "source_apk=${APK_PATH}"
           } > dist/build-info.txt
 
       - name: Upload artifact
