@@ -15,6 +15,8 @@ jobs:
       APP_ENV: production
       EXPO_NO_TELEMETRY: "1"
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
+      GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=1g
 
     steps:
       - name: Checkout
@@ -42,11 +44,11 @@ jobs:
 
       - name: Generate Android project
         working-directory: packages/happy-app
-        run: npx expo prebuild --platform android --non-interactive --no-install --clean
+        run: npx expo prebuild --platform android --no-install --clean
 
       - name: Build debug APK
         working-directory: packages/happy-app/android
-        run: ./gradlew assembleDebug
+        run: ./gradlew --no-daemon --no-parallel assembleDebug
 
       - name: Package artifact
         shell: bash
