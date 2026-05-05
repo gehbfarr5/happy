@@ -16,7 +16,6 @@ jobs:
       EXPO_NO_TELEMETRY: "1"
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
-      GRADLE_OPTS: -Xmx6g -XX:MaxMetaspaceSize=1g
 
     steps:
       - name: Checkout
@@ -46,9 +45,20 @@ jobs:
         working-directory: packages/happy-app
         run: npx expo prebuild --platform android --no-install --clean
 
+      - name: Tune Gradle for CI
+        working-directory: packages/happy-app/android
+        run: |
+          set -euo pipefail
+          perl -0pi -e 's/^org\.gradle\.jvmargs=.*$/org.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g/m' gradle.properties
+          if grep -q '^org\.gradle\.workers\.max=' gradle.properties; then
+            perl -0pi -e 's/^org\.gradle\.workers\.max=.*$/org.gradle.workers.max=2/m' gradle.properties
+          else
+            printf '\norg.gradle.workers.max=2\n' >> gradle.properties
+          fi
+
       - name: Build debug APK
         working-directory: packages/happy-app/android
-        run: ./gradlew --no-daemon --no-parallel assembleDebug
+        run: ./gradlew --no-daemon --no-parallel --stacktrace assembleDebug
 
       - name: Package artifact
         shell: bash
